@@ -93,8 +93,10 @@ V* b_americaya(V* v) {
 static void normpath(char* path) {
     const char* p = path;
     int absolute = (*p == '/');
-    const char* segs[512];
-    int lens[512];
+    /* resolve_path() caps input at 4096 bytes and every segment needs at
+     * least 2 bytes ("/x"), so 2048 slots can never overflow. */
+    const char* segs[2048];
+    int lens[2048];
     int n = 0;
     while (*p) {
         while (*p == '/') p++;

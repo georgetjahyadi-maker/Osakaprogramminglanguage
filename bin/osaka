@@ -33,10 +33,14 @@ case "$1" in
             /*) ;;
             *) src="$PWD/$src" ;;
         esac
-        tmpout="$(mktemp -t osaka.XXXXXX).sbc"
-        trap 'rm -f "$tmpout"' EXIT
+        tmpdir="$(mktemp -d -t osaka.XXXXXX)"
+        trap 'rm -rf "$tmpdir"' EXIT
+        tmpout="$tmpdir/prog.sbc"
         "$BIN_DIR/osakac" "$src" "$tmpout"
-        exec "$VM" "$tmpout" "$@"
+        set +e
+        "$VM" "$tmpout" "$@"
+        rc=$?
+        exit $rc
         ;;
     build)
         shift

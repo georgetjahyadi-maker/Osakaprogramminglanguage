@@ -5,7 +5,7 @@
 # one-time transpiler only; the binary itself needs nothing but a C compiler).
 
 CC ?= cc
-CFLAGS ?= -O2 -std=c11 -Wall -Wno-unused-parameter
+CFLAGS ?= -O2 -std=c11 -D_DEFAULT_SOURCE -Wall -Wno-unused-parameter
 
 SRCS = rt.c json.c builtins.c main.c vm.c
 HDRS = value.h
