@@ -1,236 +1,261 @@
-[
- {
-  "program": "tests/FastTest.saka",
-  "status": "compile-error",
-  "reason": "RuntimeError: Compiler: unsupported stmt <class 'ast_nodes.Declaration'>"
+{
+ "generated_by": {
+  "git_revision": "950c73f012ab0f2679025dad1311362c33b6d6e6+dirty",
+  "toolchain_sha256": "97598a2609d8204bee74357d528072dcd5ab0d2d63e4e6179bd087bbb68c8590",
+  "files_sha256": {
+   "lexer.py": "48c542a99e6d29bdb6c58fdef55ba8cd42415e7c5bdc97e2479f48bde105db98",
+   "parser.py": "5765ccd2499c3d61e314ff2ff506350a8d4034c06a741abbd64982820d8320f4",
+   "compiler.py": "679cdf71d88418e1e617c2577ea56873e3cc03af4135a6528d8d605eff68fe66",
+   "bytecode.py": "69e46096c5fa50c96515c0ebdb93b9bb42970cf08a1514fd50ac0daa0fbed003",
+   "sbc.py": "1d91bfa2038e8939673d3a355b49fd7e290f0fe6ae449caa7fb091bd2dbdafee",
+   "verifier.py": "19c2e4fc24c4b2c3376717bacc2ee7eda83446e918ddf66f2cddca872488b41b",
+   "vm.py": "d80e1f305de5bcb69a18fd218c03b3aacce33a737c2848c9311d9128e61ffc1f",
+   "runtime.py": "8434f2ac141e751d5b0e2ab3b3353f3199ce9b79efc99b5e336bf70c54d88578",
+   "native/osakavm": "e6cab32bb37299a27d10f4315dada6c4db777fd82d830f13097a7f188fc01b16"
+  }
  },
- {
-  "program": "tests/Stage3/01_block_basic.saka",
-  "status": "compile-error",
-  "reason": "SyntaxError: Expected EQUAL, got COLON at position 2"
+ "summary": {
+  "compile-error": 2,
+  "pass": 38
  },
- {
-  "program": "tests/Stage3/02_if_truth_ok.saka",
-  "status": "compile-error",
-  "reason": "SyntaxError: Expected EQUAL, got COLON at position 6"
- },
- {
-  "program": "tests/Stage3/03_if_grain_fail.saka",
-  "status": "compile-error",
-  "reason": "SyntaxError: Expected EQUAL, got IDENT at position 1"
- },
- {
-  "program": "tests/Stage3/04_comparison_kinds.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/Stage3/05_while_truth_ok.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/Stage3/06_while_grain_fail.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/Stage3/07_scope_shadowing.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/Stage3/08_hecho_still_works.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/Stage3/09_regression_stage2.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/collectionstest.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/01_variable_assignment.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/02_control_flow.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/03_function_calls.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/04_error_handling.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/05_io_operations.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/06_sataandagi.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/07_americaya.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/08_math_object.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/09_math_object_js.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/10_math_object_trig_random.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/11_for_loop.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/12_break_continue.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/13_import_std.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/14_file_module_values.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/15_file_io_basic.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/16_file_module_functions.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/equivalence/debug_trace.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/helloworld.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/test_6d2.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/test_flow.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/test_fn.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/test_function_arguments.saka",
-  "status": "compile-error",
-  "reason": "SyntaxError: Expected RPAREN, got IDENT at position 4"
- },
- {
-  "program": "tests/test_function_validation.saka",
-  "status": "compile-error",
-  "reason": "SyntaxError: Expected RPAREN, got IDENT at position 4"
- },
- {
-  "program": "tests/test_lists.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/test_maps.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/test_stdlib.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/test_strings.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/test_vm.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- },
- {
-  "program": "tests/testwarnings.saka",
-  "status": "pass",
-  "reason": "",
-  "elapsed_s": 0.0
- }
-]
+ "results": [
+  {
+   "program": "tests/FastTest.saka",
+   "status": "compile-error",
+   "reason": "RuntimeError: Compiler: unsupported stmt <class 'ast_nodes.Declaration'>"
+  },
+  {
+   "program": "tests/Stage3/01_block_basic.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/Stage3/02_if_truth_ok.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/Stage3/03_if_grain_fail.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/Stage3/04_comparison_kinds.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/Stage3/05_while_truth_ok.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/Stage3/06_while_grain_fail.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/Stage3/07_scope_shadowing.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/Stage3/08_hecho_still_works.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/Stage3/09_regression_stage2.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/collectionstest.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/01_variable_assignment.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/02_control_flow.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/03_function_calls.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/04_error_handling.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/05_io_operations.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/06_sataandagi.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/07_americaya.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/08_math_object.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/09_math_object_js.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/10_math_object_trig_random.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/11_for_loop.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/12_break_continue.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/13_import_std.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/14_file_module_values.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/15_file_io_basic.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/16_file_module_functions.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/equivalence/debug_trace.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/helloworld.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/test_6d2.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/test_flow_fail.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/test_fn.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/test_function_arguments_fail.saka",
+   "status": "compile-error",
+   "reason": "RuntimeError: Function 'add' expects 2 arguments, got 1"
+  },
+  {
+   "program": "tests/test_function_validation.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/test_lists.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/test_maps.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/test_stdlib.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/test_strings.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/test_vm.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  },
+  {
+   "program": "tests/testwarnings.saka",
+   "status": "pass",
+   "reason": "",
+   "elapsed_s": 0.0
+  }
+ ]
+}
