@@ -7,7 +7,7 @@
 # The release tarball contains a ready-to-use toolchain:
 #   bin/osakavm  bin/osaka  bin/osakac  lib/osakac.stage2.sbc
 
-VERSION ?= 0.1.0
+VERSION ?= 1.1.1
 
 .PHONY: all build install release clean
 

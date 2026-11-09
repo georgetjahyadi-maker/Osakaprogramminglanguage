@@ -6,7 +6,7 @@ same SBC1 document on both the Python VM and the self-hosted Osaka VM
 error text match exactly (the tests/test_selfhost_vm.py contract).
 
 Corpus: tests/*.saka, tests/equivalence/*.saka, tests/Stage3/*.saka.
-Writes a JSON report (gate_d_gaps.json) and prints a human-readable table.
+Writes a JSON report (bootstrap/GATE_D_GAPS.json) and prints a human-readable table.
 
 Usage: python3 run_conformance_d.py [--only SUBSTRING]
 """
@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lexer import lex
 from parser import Parser
 from compiler import Compiler
+from gate_ckpt import report_provenance
 from sbc import program_to_dict
 from tests.test_selfhost_vm import run_on_python_vm, run_on_osaka_vm
 from tests.test_native_vm import _ensure_module_artifacts
@@ -126,8 +127,8 @@ def main():
             line += f"  ({record['elapsed_s']}s)"
         print(line, flush=True)
     print(f"\nSummary: {json.dumps(counts)}")
-    report = ROOT / "gate_d_gaps.json"
-    report.write_text(json.dumps(results, indent=1), encoding="utf-8")
+    report = ROOT / "bootstrap" / "GATE_D_GAPS.json"
+    report.write_text(json.dumps({"generated_by": report_provenance(ROOT, ("selfhost/vm.saka",)), "summary": counts, "results": results}, indent=1), encoding="utf-8")
     print(f"Report written to {report.name}")
     return 0
 

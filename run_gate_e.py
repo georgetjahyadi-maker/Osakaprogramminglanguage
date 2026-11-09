@@ -30,6 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from gate_ckpt import Checkpoints, fingerprint, sha256_bytes, sha256_file
 from selfhost_bundle import DEFAULT_ORDER
 
 ROOT = Path(__file__).resolve().parent
@@ -78,37 +79,38 @@ def call_on_native_vm(artifact_path, fname, args):
     return json.loads(proc.stdout)
 
 
-def _ckpt_path(name):
-    return BOOTSTRAP / f".ckpt.gatee.{name}.json"
+def gate_inputs(stage2_text, source):
+    """Hashes of everything that determines Gate E's checkpoints."""
+    return {
+        "compiler_stage2": sha256_bytes(stage2_text.encode("utf-8")),
+        "bundle_source": sha256_bytes(source.encode("utf-8")),
+        "native_vm": sha256_file(OSAKAVM),
+    }
 
 
-def _load_ckpt(path):
-    if path.is_file():
-        try:
-            return json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
-            path.unlink(missing_ok=True)  # corrupt checkpoint: discard
-    return None
-
-
-def _save_ckpt(path, value):
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(value), encoding="utf-8")
-    tmp.replace(path)
-
-
-def run_phase(label, ckpt_name, fn):
-    ckpt = _ckpt_path(ckpt_name)
-    cached = _load_ckpt(ckpt)
+def run_phase(ckpts, label, ckpt_name, fn):
+    cached = ckpts.load(ckpt_name)
     if cached is not None:
         heartbeat(f"Gate E: [{label}] resumed from checkpoint")
         return cached
     started = time.time()
     heartbeat(f"Gate E: [{label}] running on the native VM ...")
     result = fn()
-    _save_ckpt(ckpt, result)
+    ckpts.save(ckpt_name, result)
     heartbeat(f"Gate E: [{label}] done in {time.time() - started:.0f}s (checkpointed)")
     return result
+
+
+def provenance_inputs(inputs, key):
+    return [
+        "Inputs (checkpoints are keyed to these; any change discards them):",
+        "",
+        f"- compiler (stage2) sha256: `{inputs['compiler_stage2']}`",
+        f"- bundle source sha256: `{inputs['bundle_source']}`",
+        f"- native VM binary sha256: `{inputs['native_vm']}`",
+        f"- checkpoint key: `{key}`",
+        "",
+    ]
 
 
 def main():
@@ -120,9 +122,19 @@ def main():
 
     stage2_text = read_text(STAGE2)
     stage2_sha = hashlib.sha256(stage2_text.encode()).hexdigest()
+    if not OSAKAVM.is_file():
+        raise SystemExit(f"FATAL: {OSAKAVM} not built; run `make build`")
+    source = _bundle_source()
+    inputs = gate_inputs(stage2_text, source)
+    ckpt_key = fingerprint(**inputs)
+    ckpts = Checkpoints(BOOTSTRAP, "gatee", ckpt_key)
+    stale = ckpts.purge_stale()
+    if stale:
+        heartbeat(f"Gate E: discarded {len(stale)} stale checkpoint(s) "
+                  f"from a different compiler/source/VM: {', '.join(stale)}")
 
     if opts.finish:
-        emit_env = _load_ckpt(_ckpt_path("emit"))
+        emit_env = ckpts.load("emit")
         if not (isinstance(emit_env, dict) and emit_env.get("ok") == 1
                 and isinstance(emit_env.get("value"), str)):
             raise SystemExit("FATAL: emit checkpoint missing or invalid; "
@@ -143,6 +155,7 @@ def main():
             "interpreter is involved at run time. Each phase is checkpointed",
             "under `bootstrap/.ckpt.gatee.*.json`.",
             "",
+            *provenance_inputs(inputs, ckpt_key),
             "| Stage | SHA256 | Chars |",
             "| --- | --- | --- |",
             f"| stage2 (checked in) | `{stage2_sha}` | {len(stage2_text)} |",
@@ -171,13 +184,11 @@ def main():
 
     heartbeat(f"Gate E: loaded checked-in stage2 ({len(stage2_text)} chars, {stage2_sha})")
 
-    source = _bundle_source()
-
     def phase_result(label, fname, args, ckpt_name):
         """Run one pipeline phase; unwrap vm_call_func's envelope and, when
         present, the artifact function's own envelope (em_dump returns the
         SBC text directly); return the raw result."""
-        result = run_phase(label, ckpt_name, lambda: call_on_native_vm(
+        result = run_phase(ckpts, label, ckpt_name, lambda: call_on_native_vm(
             STAGE2, fname, args))
         if not isinstance(result, dict) or result.get("ok") != 1:
             raise SystemExit(f"FATAL: {label}: {str(result)[:300]}")
@@ -211,6 +222,7 @@ def main():
         "interpreter is involved at run time. Each phase is checkpointed",
         "under `bootstrap/.ckpt.gatee.*.json`.",
         "",
+        *provenance_inputs(inputs, ckpt_key),
         "| Stage | SHA256 | Chars |",
         "| --- | --- | --- |",
         f"| stage2 (checked in) | `{stage2_sha}` | {len(stage2_text)} |",

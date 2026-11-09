@@ -43,6 +43,7 @@ from pathlib import Path
 from bootstrap_profile import validate_bootstrap_ast
 from bytecode import CALL_FUNC, HALT, PUSH_CONST, BytecodeProgram, Value
 from compiler import Compiler
+from gate_ckpt import Checkpoints, fingerprint, sha256_bytes
 from runtime import Runtime
 from sbc import LANGUAGE_VERSION, VERSION, dump, load
 from selfhost_bundle import DEFAULT_ORDER, bundle_ast
@@ -56,6 +57,13 @@ STAGE2 = BOOTSTRAP / "osakac.stage2.sbc"
 STAGE3 = BOOTSTRAP / "osakac.stage3.sbc"
 PROVENANCE = BOOTSTRAP / "GATE_C_PROVENANCE.md"
 SOURCE_ROOT = ROOT / "selfhost"
+# Records, per stage artifact, the key of the inputs it was built from and
+# its own hash. A stage is skipped only when both still match.
+MANIFEST = BOOTSTRAP / "GATE_C_MANIFEST.json"
+# Stage 0 (Python) files that build stage1 and run the later stages.
+HOST_FILES = ("compiler.py", "vm.py", "runtime.py", "parser.py", "lexer.py",
+              "bytecode.py", "sbc.py", "verifier.py", "selfhost_bundle.py",
+              "bootstrap_profile.py")
 
 
 def sha256_file(path):
@@ -86,23 +94,36 @@ def _call_in_program(program, fname, args):
     return frame.stack[-1].data if frame and frame.stack else None
 
 
-def _ckpt_path(stage_key, name):
-    return BOOTSTRAP / f".ckpt.{stage_key}.{name}.json"
+def host_hashes():
+    return {f"host:{name}": sha256_file(ROOT / name) for name in HOST_FILES}
 
 
-def _load_ckpt(path):
-    if path.is_file():
-        try:
-            return json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
-            path.unlink(missing_ok=True)  # corrupt checkpoint: discard
-    return None
+def stage_key(stage_in_sha, source):
+    """Key for a stage run: the compiler artifact running it, the sources it
+    compiles, and the Python host it runs on."""
+    return fingerprint(compiler=stage_in_sha,
+                       bundle_source=sha256_bytes(source.encode("utf-8")),
+                       **host_hashes())
 
 
-def _save_ckpt(path, value):
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(value), encoding="utf-8")
-    tmp.replace(path)
+def load_manifest():
+    try:
+        data = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_manifest(manifest):
+    MANIFEST.write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n",
+                        encoding="utf-8")
+
+
+def up_to_date(manifest, artifact, key):
+    entry = manifest.get(artifact.name)
+    return (artifact.is_file() and isinstance(entry, dict)
+            and entry.get("input_key") == key
+            and entry.get("sha256") == sha256_file(artifact))
 
 
 def _bundle_source():
@@ -113,24 +134,28 @@ def _bundle_source():
     )
 
 
-def run_stage_phased(stage_path, output_path, stage_key):
+def run_stage_phased(stage_path, output_path, stage_label, key):
     """Run one stage via the artifact's own pipeline, checkpointed per phase.
 
     Phases mirror mn_compile_bundle exactly:
         source -> parser_parse_program -> compile_ir -> vf_verify -> em_dump
     """
     program = load(str(stage_path))
+    ckpts = Checkpoints(BOOTSTRAP, stage_label, key)
+    stale = ckpts.purge_stale()
+    if stale:
+        print(f"  discarded {len(stale)} stale checkpoint(s) from a different "
+              f"compiler/source/host: {', '.join(stale)}", flush=True)
 
     def phase(label, ckpt_name, fn):
-        ckpt = _ckpt_path(stage_key, ckpt_name)
-        cached = _load_ckpt(ckpt)
+        cached = ckpts.load(ckpt_name)
         if cached is not None:
             print(f"  [{label}] resumed from checkpoint", flush=True)
             return cached
         started = time.time()
         print(f"  [{label}] running ...", flush=True)
         result = fn()
-        _save_ckpt(ckpt, result)
+        ckpts.save(ckpt_name, result)
         print(f"  [{label}] done in {time.time() - started:.0f}s "
               f"(checkpointed)", flush=True)
         return result
@@ -158,16 +183,8 @@ def run_stage_phased(stage_path, output_path, stage_key):
         program, "em_dump", [compiled["value"]]))
     output_path.write_text(text, encoding="utf-8")
 
-    for name in ("ast", "doc", "sbc_text"):
-        _ckpt_path(stage_key, name).unlink(missing_ok=True)
+    ckpts.clear()
     return True
-
-
-def _newest_source_mtime():
-    newest = Path(__file__).stat().st_mtime
-    for path in SOURCE_ROOT.glob("*.saka"):
-        newest = max(newest, path.stat().st_mtime)
-    return newest
 
 
 class _Heartbeat:
@@ -238,10 +255,12 @@ def main():
     _install_crash_diagnostics()
 
     # ---- Stage 1: the Python Stage 0 compiler builds the seed artifact. ----
-    # Resumable: rebuilt only when missing or older than the newest tracked
-    # selfhost source / this driver.
-    source_newer = _newest_source_mtime()
-    if STAGE1.is_file() and STAGE1.stat().st_mtime > source_newer:
+    # Resumable: rebuilt only when the manifest shows it was built from the
+    # current selfhost sources by the current Stage 0 compiler.
+    manifest = load_manifest()
+    source = _bundle_source()
+    stage1_key = stage_key("stage0", source)
+    if up_to_date(manifest, STAGE1, stage1_key):
         print(f"Stage 1: {STAGE1.name} up to date, skipping rebuild.")
     else:
         print("Stage 0: compiling the selfhost bundle (12 modules) ...")
@@ -254,13 +273,18 @@ def main():
             print("FATAL: stage 1 artifact failed verification")
             return 1
         dump(stage1_program, str(STAGE1))
+        manifest[STAGE1.name] = {"input_key": stage1_key,
+                                 "built_by": "stage0",
+                                 "sha256": sha256_file(STAGE1)}
+        save_manifest(manifest)
         print(f"  stage1: {STAGE1.stat().st_size} bytes, "
               f"{len(stage1_program.functions)} functions")
 
     # ---- Stage 2 and Stage 3: the artifacts compile the same sources. ----
     for index, (stage_in, stage_out) in enumerate(((STAGE1, STAGE2), (STAGE2, STAGE3)), start=2):
-        if (stage_out.is_file()
-                and stage_out.stat().st_mtime > stage_in.stat().st_mtime):
+        stage_in_sha = sha256_file(stage_in)
+        key = stage_key(stage_in_sha, source)
+        if up_to_date(manifest, stage_out, key):
             print(f"{stage_out.name}: up to date, skipping run.")
             continue
         started = time.time()
@@ -268,7 +292,12 @@ def main():
               "(artifact pipeline on the Python VM, checkpointed per phase) ...",
               flush=True)
         with _Heartbeat(stage_in.name):
-            run_stage_phased(stage_in, stage_out, f"s{index}")
+            run_stage_phased(stage_in, stage_out, f"s{index}", key)
+        manifest[stage_out.name] = {"input_key": key,
+                                    "built_by": stage_in.name,
+                                    "built_by_sha256": stage_in_sha,
+                                    "sha256": sha256_file(stage_out)}
+        save_manifest(manifest)
         print(f"  {stage_out.name}: {stage_out.stat().st_size} bytes "
               f"in {time.time() - started:.1f}s", flush=True)
 
@@ -296,6 +325,11 @@ def main():
         f"- stage1 sha256: {sha256_file(STAGE1)}\n"
         f"- stage2 sha256: {h2}\n"
         f"- stage3 sha256: {h3}\n"
+        f"- stage2 built by: {manifest[STAGE2.name]['built_by']} "
+        f"({manifest[STAGE2.name]['built_by_sha256']})\n"
+        f"- stage3 built by: {manifest[STAGE3.name]['built_by']} "
+        f"({manifest[STAGE3.name]['built_by_sha256']})\n"
+        f"- bundle source sha256: {sha256_bytes(source.encode('utf-8'))}\n"
         f"- fixed point: SHA256(stage2) == SHA256(stage3): verified\n"
         f"- source revision: {revision}\n"
         f"- language version: {LANGUAGE_VERSION}\n"

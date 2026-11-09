@@ -1,8 +1,11 @@
 truthaboutgrain age = 20;
-result: int = 0;
+truthaboutgrain result = 0;
 
 if (age > 18) {
+    Ah(result);
     result = 1;
 }
 
-assert(result == 1);
+if (result != 1) {
+    Panic("if: expected result == 1");
+}

@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lexer import lex
 from parser import Parser
 from compiler import Compiler
+from gate_ckpt import report_provenance
 from sbc import program_to_dict
 from tests.test_selfhost_vm import run_on_python_vm
 from tests.test_native_vm import run_on_native_vm
@@ -120,7 +121,7 @@ def main():
             line += f"  ({record['elapsed_s']}s)"
         print(line, flush=True)
     print(f"\nSummary: {json.dumps(counts)}")
-    REPORT.write_text(json.dumps(results, indent=1), encoding="utf-8")
+    REPORT.write_text(json.dumps({"generated_by": report_provenance(ROOT, ("native/osakavm",)), "summary": counts, "results": results}, indent=1), encoding="utf-8")
     print(f"Report written to {REPORT.name}")
     return 0
 

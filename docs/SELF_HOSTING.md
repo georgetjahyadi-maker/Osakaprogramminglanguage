@@ -27,6 +27,14 @@ driver checkpoints each pipeline phase to `bootstrap/.ckpt.<stage>.*.json`
 so a crash loses at most one phase, and writes the provenance record on
 success.
 
+Every checkpoint is keyed (see `gate_ckpt.py`) to the SHA-256 of the
+compiler artifact, the bundle source and the host that produced it; a
+checkpoint from any other compiler, source or host is discarded instead of
+reused. Gate C decides whether a stage is up to date from
+`bootstrap/GATE_C_MANIFEST.json` (input key + output hash), not from file
+timestamps, which are meaningless after a fresh clone. Each provenance
+record lists the hashes it was produced from.
+
 Gate D (runtime parity) is PASSED: `selfhost/vm.saka` is a full 1:1
 Osaka port of Stage 0's `vm.py` (all SBC1 opcodes, frames/scopes,
 try-handler unwinding, kind tracking, policy warnings, and the reflection/
@@ -254,6 +262,12 @@ This is the definition of compiler self-hosting.
 This is the definition of a self-hosted implementation whose outer host is
 still Python.
 
+Note: the Gate D record was produced for an earlier stage2
+(`c1b04df0…`, kept as `bootstrap/gate_d_stage2.sbc`). The current stage2
+(`07c2b0f1…`) is covered by Gate C (fixed point) and Gate E (native VM),
+but Gate D has not been re-run for it; a full Gate D run takes about 31
+hours on the Python-hosted Osaka VM.
+
 ### Gate E — Native host — PASSED
 
 - A clean supported machine can build or install the native VM without Python.
@@ -274,11 +288,16 @@ Verification record (see `bootstrap/GATE_E_PROVENANCE.md`):
   (`bootstrap/osakac.stage2.sbc`) over the bundle sources through the full
   pipeline (parse -> compile -> verify -> emit) in ~42 minutes.
 - `SHA256(stage2'') == SHA256(stage2)`
-  (`c1b04df02fe0fe91130ce60602d0ffca485ee856f2d528e6cf3b16658da45583`) —
+  (`07c2b0f18db27e7faac2b7fd82e8b131434ee9193625d5fc481897f07dc2d690`) —
   byte-identical fixed point, reproduced without Python at run time.
 - The 28-case differential suite (`tests/test_native_vm.py`) passes on the
   native VM, and the conformance corpus matches the Python VM's results
   exactly (32 pass / 6 compile-error / 2 fail, same exclusions as Gate D).
+- Re-run for v1.1.1 after the legacy tests were rewritten in current
+  syntax: 38 pass / 2 compile-error (`tests/FastTest.saka` uses
+  `Escalator`, which the compiler does not support yet;
+  `tests/test_function_arguments_fail.saka` is rejected at compile time by
+  design). The report now records the toolchain hashes that produced it.
 
 ## Bootstrap artifact policy
 

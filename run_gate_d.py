@@ -34,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from bytecode import BytecodeProgram, Value, PUSH_CONST, CALL_FUNC, HALT
 from runtime import Runtime
 from sbc import load, program_to_dict
+from gate_ckpt import Checkpoints, fingerprint, sha256_bytes, sha256_file
 from selfhost_bundle import DEFAULT_ORDER
 from verifier import verify_program
 from vm import VM
@@ -92,37 +93,41 @@ def call_on_osaka_vm(artifact_doc, fname, args):
     return frame.stack[-1].data
 
 
-def _ckpt_path(name):
-    return BOOTSTRAP / f".ckpt.gated.{name}.json"
+# Python host files that build and run the Osaka VM bundle; a change to any
+# of them can change what the checkpoints contain.
+HOST_FILES = ("vm.py", "compiler.py", "runtime.py", "parser.py", "lexer.py")
 
 
-def _load_ckpt(path):
-    if path.is_file():
-        try:
-            return json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
-            path.unlink(missing_ok=True)  # corrupt checkpoint: discard
-    return None
+def gate_inputs(stage2_text, source):
+    """Hashes of everything that determines Gate D's checkpoints."""
+    inputs = {
+        "compiler_stage2": sha256_bytes(stage2_text.encode("utf-8")),
+        "bundle_source": sha256_bytes(source.encode("utf-8")),
+    }
+    for name in HOST_FILES:
+        inputs[f"host:{name}"] = sha256_file(ROOT / name)
+    return inputs
 
 
-def _save_ckpt(path, value):
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(value), encoding="utf-8")
-    tmp.replace(path)
-
-
-def run_phase(label, ckpt_name, fn):
-    ckpt = _ckpt_path(ckpt_name)
-    cached = _load_ckpt(ckpt)
+def run_phase(ckpts, label, ckpt_name, fn):
+    cached = ckpts.load(ckpt_name)
     if cached is not None:
         heartbeat(f"Gate D: [{label}] resumed from checkpoint")
         return cached
     started = time.time()
     heartbeat(f"Gate D: [{label}] running on the Osaka VM ...")
     result = fn()
-    _save_ckpt(ckpt, result)
+    ckpts.save(ckpt_name, result)
     heartbeat(f"Gate D: [{label}] done in {time.time() - started:.0f}s (checkpointed)")
     return result
+
+
+def provenance_inputs(inputs, key):
+    lines = ["Inputs (checkpoints are keyed to these; any change discards them):", ""]
+    for name in sorted(inputs):
+        lines.append(f"- {name} sha256: `{inputs[name]}`")
+    lines += [f"- checkpoint key: `{key}`", ""]
+    return lines
 
 
 def main():
@@ -136,6 +141,10 @@ def main():
 
     stage2_text = read_text(STAGE2)
     stage2_sha = hashlib.sha256(stage2_text.encode()).hexdigest()
+    source = _bundle_source()
+    inputs = gate_inputs(stage2_text, source)
+    ckpt_key = fingerprint(**inputs)
+    ckpts = Checkpoints(BOOTSTRAP, "gated", ckpt_key)
 
     if opts.smoke:
         artifact = program_to_dict(load(str(STAGE2)))
@@ -158,6 +167,11 @@ def main():
         print("SMOKE OK")
         return 0
 
+    stale = ckpts.purge_stale()
+    if stale:
+        heartbeat(f"Gate D: discarded {len(stale)} stale checkpoint(s) "
+                  f"from a different compiler/source/host: {', '.join(stale)}")
+
     if opts.finish:
         # Generation N+1 was skipped by agreement: Gate C already proved the
         # fixed point (SHA256(stage2) == SHA256(stage3) on the Python VM), and
@@ -167,7 +181,7 @@ def main():
         # established by SHA256(stage2') == SHA256(checked-in stage2).
         # The emit checkpoint stores the raw vm_call_func envelope
         # {"ok", "value", "diagnostic"}; unwrap to the SBC text.
-        emit_env = _load_ckpt(_ckpt_path("emit"))
+        emit_env = ckpts.load("emit")
         if not (isinstance(emit_env, dict) and emit_env.get("ok") == 1
                 and isinstance(emit_env.get("value"), str)):
             raise SystemExit("FATAL: emit checkpoint missing or invalid; "
@@ -186,13 +200,7 @@ def main():
             "VM) via `vm_call_func`, with the Python VM (`vm.py`) as the outer",
             "host. Each phase is checkpointed under `bootstrap/.ckpt.gated.*.json`.",
             "",
-            "| Phase | Duration |",
-            "| --- | --- |",
-            "| parse bundle source | 43426s (12h04m) |",
-            "| compile bundle AST | 3059s (51m) |",
-            "| verify compiled doc | 9429s (2h37m) |",
-            "| emit stage2' SBC text | 56637s (15h44m) |",
-            "",
+            *provenance_inputs(inputs, ckpt_key),
             "| Stage | SHA256 | Chars |",
             "| --- | --- | --- |",
             f"| stage2 (checked in) | `{stage2_sha}` | {len(stage2_text)} |",
@@ -223,13 +231,11 @@ def main():
     heartbeat(f"Gate D: loaded checked-in stage2 ({len(stage2_text)} chars, {stage2_sha})")
     artifact = program_to_dict(load(str(STAGE2)))
 
-    source = _bundle_source()
-
     def phase_result(label, fname, args, ckpt_name):
         """Run one pipeline phase; unwrap vm_call_func's envelope and, when
         present, the artifact function's own envelope (em_dump returns the
         SBC text directly); return the raw result."""
-        result = run_phase(label, ckpt_name, lambda: call_on_osaka_vm(
+        result = run_phase(ckpts, label, ckpt_name, lambda: call_on_osaka_vm(
             artifact, fname, args))
         if not isinstance(result, dict) or result.get("ok") != 1:
             raise SystemExit(f"FATAL: {label}: {str(result)[:300]}")
@@ -273,6 +279,7 @@ def main():
         "VM) via `vm_call_func`, with the Python VM (`vm.py`) as the outer",
         "host. Each phase is checkpointed under `bootstrap/.ckpt.gated.*.json`.",
         "",
+        *provenance_inputs(inputs, ckpt_key),
         "| Stage | SHA256 | Chars |",
         "| --- | --- | --- |",
         f"| stage2 (checked in) | `{stage2_sha}` | {len(stage2_text)} |",

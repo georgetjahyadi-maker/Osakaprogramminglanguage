@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "OsakaProgrammingLanguage"
-version = "1.1.0"
+version = "1.1.1"
 description = "Osaka Programming Language CLI (interpreter + VM + equivalence lock)"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -32,6 +32,7 @@ py-modules = [
   "equiv_lock",
   "equiv_test",
   "frontend_contract",
+  "gate_ckpt",
   "interpreter",
   "lexer",
   "parser",

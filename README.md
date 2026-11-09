@@ -10,6 +10,10 @@ Osaka Lang is a custom programming language implemented in Python, with:
 
 You can run it from source (`python3 saka.py`) or as an installed CLI (`osaka`).
 
+**Start with [IDENTITY.md](IDENTITY.md)**: the four ideas that make Osaka
+Osaka (truth and grain, mutation as a ritual, the Osaka voice, proof over
+trust) and the rules every change is checked against.
+
 ---
 
 ## Quick Start
@@ -419,6 +423,27 @@ Verifier unit tests:
 python3 -m unittest tests/test_verifier.py
 ```
 
+Everything CI runs (see `.github/workflows/ci.yml`):
+
+```bash
+make build
+python3 run_tests.py
+python3 run_tests.py --dir tests/Stage3 --known-failures tests/known_divergences.json
+python3 run_tests.py --dir tests --known-failures tests/known_divergences.json
+python3 -m unittest discover -s tests -p "test_*.py"
+```
+
+`tests/known_divergences.json` lists the programs on which the interpreter
+and the VM currently disagree, each with the reason. CI fails if a new
+program starts disagreeing, and also if a listed one starts agreeing, so
+that it gets removed from the list. The list may only shrink.
+
+Performance baseline (see `docs/BASELINE.md`):
+
+```bash
+python3 bench/vm_throughput.py
+```
+
 ---
 
 ## Implementation Map (contributors)
@@ -444,6 +469,24 @@ When changing language semantics:
 ---
 
 ## Release Notes
+
+### v1.1.1 (Foundations)
+
+No language changes; this release protects what exists.
+
+- Added `IDENTITY.md`, the checklist every change is measured against.
+- Added CI (Linux and macOS): native VM build, equivalence suite, legacy
+  corpora with a shrink-only known-divergence list, unit tests, examples,
+  self-hosted compiler smoke test, and a Python-free native run.
+- Gate checkpoints and reports now record the hash of the compiler, sources
+  and host that produced them; stale checkpoints are discarded instead of
+  reused. Gate C uses a hash manifest instead of file timestamps.
+- Removed run logs and checkpoints from git.
+- Rewrote the five legacy tests that no longer parsed; fixed
+  `examples/hello.saka` and `examples/v02.saka`, which no longer parsed.
+- `run_tests.py` now checks expected-failure tests properly (both backends
+  must reject the program).
+- Recorded a performance baseline in `docs/BASELINE.md`.
 
 ### v1.1.0
 

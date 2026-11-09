@@ -8,6 +8,7 @@ from interpreter import Interpreter
 from vm import VM
 from compiler import Compiler
 import argparse
+import json
 import equiv_lock  # Import our equivalence lock
 
 # Default test directory
@@ -80,6 +81,25 @@ def run_test(test_file, debug=False):
         print("  Running equivalence verification...")
         
     # Run through equivalence lock test
+    if expect_fail:
+        # Both backends must reject the program; agreeing on failure is the
+        # equivalence we can check for an expected-failure test.
+        errors = {}
+        for label, runner in (("AST", equiv_lock.run_ast_interpreter),
+                              ("VM", equiv_lock.run_bytecode_vm)):
+            try:
+                runner(test_file)
+            except Exception as e:
+                errors[label] = f"{type(e).__name__}: {e}"
+        if len(errors) == 2:
+            print("  Equivalence lock passed (both backends rejected the program)")
+        else:
+            missing = [b for b in ("AST", "VM") if b not in errors]
+            print(f"   EQUIVALENCE FAILURE: expected failure, but {', '.join(missing)} "
+                  "ran the program without error")
+            return False
+        return failed
+
     try:
         ast_result = equiv_lock.run_ast_interpreter(test_file)
         vm_result = equiv_lock.run_bytecode_vm(test_file)
@@ -114,7 +134,17 @@ def main():
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     parser.add_argument('--dir', type=str, default=str(TEST_DIR), 
                         help='Test directory path (default: tests/equivalence)')
+    parser.add_argument('--known-failures', type=str,
+                        help='JSON file mapping test paths to the reason they '
+                             'are known to fail. Listed tests may fail; any '
+                             'other failure, or a listed test that now passes, '
+                             'fails the run (so the list can only shrink).')
     args = parser.parse_args()
+
+    known = {}
+    if args.known_failures:
+        with open(args.known_failures) as fh:
+            known = json.load(fh)
 
     test_dir = Path(args.dir)
     if not test_dir.exists():
@@ -134,15 +164,33 @@ def main():
         sys.exit(1)
 
     passed = 0
+    unexpected_fail, unexpected_pass = [], []
     print(f"Running {len(tests)} tests in {test_dir}...")
 
     for test in tests:
-        if run_test(test, debug=args.debug):
+        key = test.as_posix()
+        ok = run_test(test, debug=args.debug)
+        if ok:
             passed += 1
+            if key in known:
+                unexpected_pass.append(key)
+        elif key not in known:
+            unexpected_fail.append(key)
 
     total = len(tests)
     print("\n==========================")
     print(f"Passed {passed}/{total} tests")
+
+    if args.known_failures:
+        print(f"Known failures allowed: {sum(1 for t in tests if t.as_posix() in known)}")
+        for key in unexpected_fail:
+            print(f"NEW FAILURE (not in {args.known_failures}): {key}")
+        for key in unexpected_pass:
+            print(f"NOW PASSES, remove it from {args.known_failures}: {key}")
+        if unexpected_fail or unexpected_pass:
+            sys.exit(1)
+        print("No new failures")
+        return
 
     if passed != total:
         sys.exit(1)

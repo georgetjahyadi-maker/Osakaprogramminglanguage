@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build native VM (C compiler only)
+        run: make build
+
+      - name: Equivalence suite (interpreter vs VM)
+        run: python3 run_tests.py
+
+      - name: Legacy corpora (known divergences may not grow)
+        run: |
+          python3 run_tests.py --dir tests/Stage3 --known-failures tests/known_divergences.json
+          python3 run_tests.py --dir tests --known-failures tests/known_divergences.json
+
+      - name: Unit tests (verifier, self-hosted VM, native VM, checkpoints)
+        run: python3 -m unittest discover -s tests -p "test_*.py"
+
+      - name: Examples run
+        run: |
+          for f in examples/*.saka; do
+            echo "::group::$f"
+            python3 saka.py "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Self-hosted compiler smoke test on the Osaka VM
+        run: python3 run_gate_d.py --smoke
+
+      - name: Native toolchain runs a program without Python
+        run: bin/osaka run tests/equivalence/01_variable_assignment.saka

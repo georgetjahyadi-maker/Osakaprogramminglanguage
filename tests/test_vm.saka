@@ -1,3 +1,4 @@
+// EXPECTED-DIAG: warnings 2
 truthaboutgrain nums = [2, 3];
 nums[1] = 99;
 Say(nums);

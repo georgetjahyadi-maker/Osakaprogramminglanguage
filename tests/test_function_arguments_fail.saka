@@ -1,0 +1,9 @@
+// Expected to fail: calling a function with the wrong number of arguments
+function add(a, b) {
+    return a + b;
+}
+
+truthaboutgrain x = add(2, 3);
+Say(x);
+
+truthaboutgrain y = add(1); // argument count error

@@ -1,3 +1,4 @@
+// EXPECTED-DIAG: warnings 2
 grainsoftruth x = 10;
 youknowsealsright(x);
 x = x + 1;     // should NOT warn "mutated without Ah()"

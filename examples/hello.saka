@@ -1,7 +1,7 @@
 grainsoftruth report = 10;
 truthaboutgrain approved = 0;
 
-Elevator();
+Elevator reportLevel;
 report = report + 5;        // loses truth
 
 Getittogether();

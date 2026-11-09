@@ -17,7 +17,18 @@ native/builtins
 native/json
 native/rt
 native/maptest
-native/main.c<
+native/main
 
-# Large gate logs (exceed GitHub 100MB limit)
+# Gate run logs, heartbeats and resumable checkpoints (local run state, not
+# results; the results are the PROVENANCE/CONFORMANCE/MANIFEST records).
 gate_c.log
+gate_err.log
+e_host.log
+bootstrap/*.log
+bootstrap/.ckpt.*
+bootstrap/.gate_*_args.json
+bootstrap/gate_e_stage2.sbc
+bootstrap/gate_d_stage3.sbc
+
+# Benchmark output
+bench/results/

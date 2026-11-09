@@ -1,0 +1,13 @@
+{
+ "tests/Stage3/05_while_truth_ok.saka": "VM warns 'count mutated without Ah()' inside a while body; the interpreter does not.",
+ "tests/Stage3/07_scope_shadowing.saka": "VM warns 'x mutated without Ah()' for a shadowed block variable; the interpreter does not.",
+ "tests/Stage3/08_hecho_still_works.saka": "Hecho reassignment wording differs: interpreter 'cannot be reassigned', VM 'cannot be modified'.",
+ "tests/Stage3/09_regression_stage2.saka": "Ohmygah warning names the variable in the interpreter ('on x') but the value in the VM ('on 15').",
+ "tests/FastTest.saka": "Escalator/Elevator declarations run in the interpreter but the compiler rejects them (unsupported stmt Declaration).",
+ "tests/collectionstest.saka": "VM adds 'mutated without Ah()' warnings for push/map writes that the interpreter does not emit.",
+ "tests/helloworld.saka": "String + number: the interpreter concatenates, the VM raises 'ADD operation unsupported'.",
+ "tests/test_6d2.saka": "push() on a map locked with Ivebeengot: the interpreter warns and blocks it, the VM raises 'push() requires list'.",
+ "tests/test_stdlib.saka": "push() on a Hecho list: the interpreter blocks it, the VM appends anyway (frozen list is mutated).",
+ "tests/test_vm.saka": "VM adds 'mutated without Ah()' warnings for push/map writes that the interpreter does not emit.",
+ "tests/testwarnings.saka": "VM warns 'mutated without Ah()' for loop-body writes that the interpreter does not emit."
+}
